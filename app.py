@@ -10,21 +10,19 @@ st.write("Sistema Inteligente com Resultados Oficiais e Ciclo das Dezenas")
 # Upload de arquivo
 arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xlsx"])
 
-# Função definitiva para extrair números válidos (ignora hífen, espaços ou caracteres inválidos)
+# Função definitiva para extrair números válidos
 def extrair_numeros_lista(celula):
     """
-    Retorna uma lista de números válidos.
-    Ignora células vazias, hífen(s), espaços e qualquer caractere inválido.
+    Retorna uma lista de números inteiros válidos.
+    Ignora células vazias, hífen(s), espaços e caracteres inválidos.
     """
     if pd.isna(celula):
         return []
-    
+
     texto = str(celula).strip()
-    
-    # Ignora células vazias ou só hífen(s)
     if not texto or re.fullmatch(r"-+", texto):
         return []
-    
+
     numeros = []
     for n in re.findall(r"\d+", texto):
         try:
