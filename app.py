@@ -1,33 +1,29 @@
 import streamlit as st
+import pandas as pd
 import random
+import re
 
 st.set_page_config(page_title="Extremo Master IA PRO", layout="centered")
 st.title("EXTREMO MASTER IA PRO")
-st.write("Sistema Inteligente com Resultados Oficiais")
+st.write("Sistema Inteligente com Resultados Oficiais e Ciclo das Dezenas")
 
+# Upload de arquivo
 arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xlsx"])
 
+# Função para extrair números válidos (ignora hífen e caracteres inválidos)
+def extrair_numeros_lista(celula):
+    if pd.isna(celula):
+        return []
+    numeros = re.findall(r'\d+', str(celula))
+    return [int(n) for n in numeros] if numeros else []
+
+df_numeros = None
 if arquivo is not None:
-    st.success("Arquivo carregado com sucesso! (Nenhum processamento de número necessário)")
-
-loteria = st.selectbox(
-    "Escolha a Loteria:",
-    ["Mega-Sena", "Lotofacil", "Quina", "Lotomania"]
-)
-
-if st.button("Gerar 3 Jogos Inteligentes"):
-    jogos = []
-    for _ in range(3):
-        if loteria == "Mega-Sena":
-            numeros = sorted(random.sample(range(1, 61), 6))
-        elif loteria == "Lotofacil":
-            numeros = sorted(random.sample(range(1, 26), 15))
-        elif loteria == "Quina":
-            numeros = sorted(random.sample(range(1, 81), 5))
-        elif loteria == "Lotomania":
-            numeros = sorted(random.sample(range(0, 100), 20))
-        jogos.append(numeros)
-
-    st.success("Jogos Gerados:")
-    for idx, jogo in enumerate(jogos, start=1):
-        st.write(f"Jogo {idx}: {jogo}")
+    try:
+        df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
+        df = df.dropna(how="all")
+        df_numeros = df.applymap(extrair_numeros_lista)
+        st.success("Arquivo carregado com sucesso!")
+        st.write("Visualização das primeiras linhas (listas de dezenas):")
+        st.dataframe(df_numeros.head(10))
+    except Exception as e:
