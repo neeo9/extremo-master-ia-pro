@@ -12,12 +12,23 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 
 # Função definitiva para extrair números válidos (ignora hífen, espaços ou caracteres inválidos)
 def extrair_numeros_lista(celula):
+    """
+    Retorna uma lista de números inteiros válidos.
+    Ignora: células vazias, hífen '-', '--', espaços e qualquer caractere inválido.
+    """
     if pd.isna(celula):
         return []
+    
     texto = str(celula).strip()
-    if texto == "" or texto == "-":
+    if texto in ["", "-", "--"]:
         return []
-    numeros = [int(n) for n in re.findall(r'\d+', texto) if n.isdigit()]
+    
+    numeros = []
+    for n in re.findall(r'\d+', texto):
+        try:
+            numeros.append(int(n))
+        except ValueError:
+            continue
     return numeros
 
 df_numeros = None
