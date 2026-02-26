@@ -7,7 +7,7 @@ st.set_page_config(page_title="Extremo Master IA PRO", layout="centered")
 st.title("EXTREMO MASTER IA PRO")
 st.write("Sistema Inteligente com Resultados Oficiais e Ciclo das Dezenas")
 
-# Upload de arquivo
+# Upload do arquivo Excel
 arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xlsx"])
 
 # Função de extração segura de números
@@ -21,11 +21,10 @@ def extrair_numeros_lista(celula):
 df_numeros = None
 if arquivo is not None:
     try:
-        # Lê o Excel
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
         
-        # 🔹 Pré-limpeza robusta: qualquer célula sem dígito vira None
+        # 🔹 Pré-limpeza robusta: células sem dígito viram None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
         
         # Extrai números de forma segura
