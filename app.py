@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import random
 import re
-from itertools import combinations
 
 st.set_page_config(page_title="Extremo Master IA PRO - Monte Carlo", layout="centered")
 st.title("EXTREMO MASTER IA PRO - Monte Carlo")
@@ -23,8 +22,13 @@ if arquivo is not None:
     try:
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
+        
+        # 🔹 Pré-limpeza absoluta: qualquer célula sem dígito vira None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
+        
+        # Extrai números de forma segura
         df_numeros = df.applymap(extrair_numeros_lista)
+        
         st.success("Arquivo carregado com sucesso!")
         st.dataframe(df_numeros.head(10))
     except Exception as e:
@@ -58,11 +62,9 @@ def calcular_ciclo(df_hist):
     return ciclos
 
 # Função Monte Carlo para refinar jogos
-def monte_carlo(df_hist, n_sim=1000):
-    # Calcula ciclos
+def monte_carlo(df_hist, n_sim=500):
     if df_hist is not None:
         ciclos = calcular_ciclo(df_hist)
-        # Frequência das dezenas (Dezenas de Ouro)
         freq = {}
         for col in df_hist.columns:
             for lista in df_hist[col]:
@@ -93,7 +95,7 @@ def monte_carlo(df_hist, n_sim=1000):
                     if random.random() < peso:
                         jogo.append(n)
             candidatos.append(sorted(jogo))
-        # Escolhe o melhor candidato baseado na soma mínima de ciclos (prioriza números que não saíram recentemente)
+        # Escolhe o melhor candidato baseado na soma mínima de ciclos
         candidatos.sort(key=lambda x: sum([ciclos.get(n,0) for n in x]))
         melhores_jogos.append(candidatos[0])
     return melhores_jogos
@@ -103,7 +105,6 @@ if st.button("Gerar 3 Jogos Monte Carlo"):
     if df_numeros is not None:
         jogos = monte_carlo(df_numeros, n_sim=500)
     else:
-        # Caso não haja histórico, gera aleatório
         jogos = []
         for _ in range(3):
             numeros = sorted(random.sample(range(parametros[loteria]["min"], parametros[loteria]["max"]+1),
