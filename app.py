@@ -10,12 +10,13 @@ st.write("Sistema Inteligente com Resultados Oficiais e Ciclo das Dezenas")
 # Upload de arquivo
 arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xlsx"])
 
-# Função definitiva para extrair números válidos
+# Função de extração segura de números
 def extrair_numeros_lista(celula):
     """Retorna lista de números inteiros válidos, ignorando hífens, espaços ou caracteres inválidos"""
     if pd.isna(celula):
         return []
-    return [int(n) for n in re.findall(r'\d+', str(celula))]
+    numeros = re.findall(r'\d+', str(celula))
+    return [int(n) for n in numeros]
 
 df_numeros = None
 if arquivo is not None:
@@ -24,7 +25,7 @@ if arquivo is not None:
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
         
-        # 🔹 Pré-limpeza definitiva: células sem números viram None
+        # 🔹 Pré-limpeza robusta: qualquer célula sem dígito vira None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
         
         # Extrai números de forma segura
