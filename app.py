@@ -12,8 +12,8 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 if arquivo is not None:
 
     try:
-        excel = pd.ExcelFile(arquivo, engine="openpyxl")
-        df = pd.read_excel(excel, sheet_name=0)
+        # Lê tudo como TEXTO (evita erro do hífen)
+        df = pd.read_excel(arquivo, engine="openpyxl", dtype=str)
 
         # Remove linhas totalmente vazias
         df = df.dropna(how="all")
@@ -21,45 +21,44 @@ if arquivo is not None:
         # Substitui hífen por vazio
         df = df.replace("-", "")
 
-        # Converte para número apenas o que for possível
-        for col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+        # Mantém apenas colunas que parecem dezenas (até 20 colunas numéricas)
+        colunas_dezenas = df.columns[2:22]  # ignora Concurso e Data
 
-        # Mantém apenas colunas numéricas
-        df_numeros = df.select_dtypes(include=["number"])
+        df_dezenas = df[colunas_dezenas]
 
-        if df_numeros.empty:
-            st.error("Nenhuma coluna numerica detectada.")
-        else:
-            st.success("Arquivo carregado com sucesso.")
-            st.dataframe(df_numeros.head())
+        # Converte apenas essas colunas para número
+        for col in df_dezenas.columns:
+            df_dezenas[col] = pd.to_numeric(df_dezenas[col], errors="coerce")
 
-            loteria = st.selectbox(
-                "Escolha a Loteria:",
-                [
-                    "Mega-Sena",
-                    "Lotofacil",
-                    "Quina",
-                    "Lotomania"
-                ]
-            )
+        st.success("Arquivo carregado com sucesso.")
+        st.dataframe(df_dezenas.head())
 
-            if st.button("Gerar Jogo Inteligente"):
+        loteria = st.selectbox(
+            "Escolha a Loteria:",
+            [
+                "Mega-Sena",
+                "Lotofacil",
+                "Quina",
+                "Lotomania"
+            ]
+        )
 
-                if loteria == "Mega-Sena":
-                    numeros = sorted(random.sample(range(1, 61), 6))
+        if st.button("Gerar Jogo Inteligente"):
 
-                elif loteria == "Lotofacil":
-                    numeros = sorted(random.sample(range(1, 26), 15))
+            if loteria == "Mega-Sena":
+                numeros = sorted(random.sample(range(1, 61), 6))
 
-                elif loteria == "Quina":
-                    numeros = sorted(random.sample(range(1, 81), 5))
+            elif loteria == "Lotofacil":
+                numeros = sorted(random.sample(range(1, 26), 15))
 
-                elif loteria == "Lotomania":
-                    numeros = sorted(random.sample(range(0, 100), 20))
+            elif loteria == "Quina":
+                numeros = sorted(random.sample(range(1, 81), 5))
 
-                st.success("Jogo Gerado:")
-                st.write(numeros)
+            elif loteria == "Lotomania":
+                numeros = sorted(random.sample(range(0, 100), 20))
+
+            st.success("Jogo Gerado:")
+            st.write(numeros)
 
     except Exception as e:
         st.error("Erro ao processar o arquivo.")
