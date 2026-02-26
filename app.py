@@ -18,24 +18,17 @@ def extrair_numeros_lista(celula):
     """
     if pd.isna(celula):
         return []
-
-    texto = str(celula).strip()
-    if not texto or re.fullmatch(r"-+", texto):
-        return []
-
-    numeros = []
-    for n in re.findall(r"\d+", texto):
-        try:
-            numeros.append(int(n))
-        except ValueError:
-            continue
-    return numeros
+    return [int(n) for n in re.findall(r'\d+', str(celula))]
 
 df_numeros = None
 if arquivo is not None:
     try:
+        # Lê o Excel
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
+        # Pré-limpeza: substitui células que não contenham números por None
+        df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
+        # Extrai números seguros
         df_numeros = df.applymap(extrair_numeros_lista)
         st.success("Arquivo carregado com sucesso!")
         st.write("Visualização das primeiras linhas (listas de dezenas):")
