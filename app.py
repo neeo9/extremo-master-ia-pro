@@ -23,7 +23,7 @@ if arquivo is not None:
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
         
-        # 🔹 Pré-limpeza absoluta: qualquer célula sem dígito vira None
+        # Pré-limpeza absoluta: qualquer célula sem dígito vira None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
         
         # Extrai números de forma segura
@@ -61,7 +61,7 @@ def calcular_ciclo(df_hist):
                 ciclos[num] = len(df_hist)
     return ciclos
 
-# Função Monte Carlo para refinar jogos
+# Monte Carlo para gerar 3 jogos distintos
 def monte_carlo(df_hist, n_sim=500):
     if df_hist is not None:
         ciclos = calcular_ciclo(df_hist)
@@ -77,17 +77,16 @@ def monte_carlo(df_hist, n_sim=500):
         dezenas_ouro = []
 
     melhores_jogos = []
-    for _ in range(3):
+    tentativas = 0
+    while len(melhores_jogos) < 3 and tentativas < 1000:
         candidatos = []
         for _ in range(n_sim):
             jogo = []
-            # Adiciona dezenas de ouro
             if dezenas_ouro:
                 ouro_jogo = random.sample(
                     dezenas_ouro, min(len(dezenas_ouro), parametros[loteria]["qtd"]//2)
                 )
                 jogo.extend(ouro_jogo)
-            # Completa com números aleatórios ponderados pelo ciclo
             while len(jogo) < parametros[loteria]["qtd"]:
                 n = random.randint(parametros[loteria]["min"], parametros[loteria]["max"])
                 if n not in jogo:
@@ -95,9 +94,11 @@ def monte_carlo(df_hist, n_sim=500):
                     if random.random() < peso:
                         jogo.append(n)
             candidatos.append(sorted(jogo))
-        # Escolhe o melhor candidato baseado na soma mínima de ciclos
         candidatos.sort(key=lambda x: sum([ciclos.get(n,0) for n in x]))
-        melhores_jogos.append(candidatos[0])
+        melhor = candidatos[0]
+        if melhor not in melhores_jogos:
+            melhores_jogos.append(melhor)
+        tentativas += 1
     return melhores_jogos
 
 # Botão de geração
@@ -106,10 +107,11 @@ if st.button("Gerar 3 Jogos Monte Carlo"):
         jogos = monte_carlo(df_numeros, n_sim=500)
     else:
         jogos = []
-        for _ in range(3):
+        while len(jogos) < 3:
             numeros = sorted(random.sample(range(parametros[loteria]["min"], parametros[loteria]["max"]+1),
                                            parametros[loteria]["qtd"]))
-            jogos.append(numeros)
+            if numeros not in jogos:
+                jogos.append(numeros)
 
     st.success("Jogos Gerados com Monte Carlo:")
     for idx, jogo in enumerate(jogos, start=1):
