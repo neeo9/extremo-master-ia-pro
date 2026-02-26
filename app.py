@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import random
+import re
 
 st.set_page_config(page_title="Extremo Master IA PRO", layout="centered")
 
@@ -17,9 +18,19 @@ if arquivo is not None:
         # Remove linhas completamente vazias
         df = df.dropna(how="all")
 
-        # Converte cada célula para número apenas se for dígito
-        # Caso contrário, mantém como NA
-        df_numeros = df.applymap(lambda x: int(x) if str(x).isdigit() else pd.NA)
+        # Função para extrair apenas dígitos
+        def extrair_numeros(celula):
+            if pd.isna(celula):
+                return pd.NA
+            # Remove tudo que não é número
+            numeros = re.findall(r'\d+', str(celula))
+            if numeros:
+                return int(numeros[0])
+            else:
+                return pd.NA
+
+        # Aplica a função em todo o DataFrame
+        df_numeros = df.applymap(extrair_numeros)
 
         st.success("Arquivo carregado com sucesso!")
         st.dataframe(df_numeros.head(10))
