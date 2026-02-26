@@ -25,7 +25,7 @@ if arquivo is not None:
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
         
-        # 🔹 Pré-limpeza absoluta: células sem dígito viram None
+        # 🔹 Pré-limpeza absoluta: qualquer célula sem dígito vira None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
         
         # Extrai números de forma segura
