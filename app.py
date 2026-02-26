@@ -14,20 +14,15 @@ if arquivo is not None:
         # Lê tudo como string, sem cabeçalho
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
 
-        # Substitui hífen ou qualquer outro caractere que não seja número
-        df = df.replace(r"[^0-9]", "", regex=True)
-
         # Remove linhas completamente vazias
         df = df.dropna(how="all")
 
-        # Mantém apenas as colunas das dezenas (até 20 colunas)
-        df_dezenas = df.iloc[:, 2:22]  # geralmente começa na coluna 3
-        # Converte cada célula para inteiro se for dígito
-        for col in df_dezenas.columns:
-            df_dezenas[col] = df_dezenas[col].apply(lambda x: int(x) if x.isdigit() else pd.NA)
+        # Converte cada célula para número apenas se for dígito
+        # Caso contrário, mantém como NA
+        df_numeros = df.applymap(lambda x: int(x) if str(x).isdigit() else pd.NA)
 
         st.success("Arquivo carregado com sucesso!")
-        st.dataframe(df_dezenas.head())
+        st.dataframe(df_numeros.head(10))
 
         loteria = st.selectbox(
             "Escolha a Loteria:",
