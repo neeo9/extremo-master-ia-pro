@@ -14,22 +14,22 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 def extrair_numeros_lista(celula):
     """
     Retorna uma lista de números válidos.
-    Ignora células vazias, '-', '--', espaços ou qualquer caractere inválido.
+    Ignora células vazias, hífen(s), espaços e qualquer caractere inválido.
     """
     if pd.isna(celula):
         return []
-
+    
     texto = str(celula).strip()
-
-    # Se estiver vazio ou apenas hífen(s), retorna lista vazia
+    
+    # Ignora células vazias ou só hífen(s)
     if not texto or re.fullmatch(r"-+", texto):
         return []
-
+    
     numeros = []
     for n in re.findall(r"\d+", texto):
         try:
             numeros.append(int(n))
-        except:
+        except ValueError:
             continue
     return numeros
 
