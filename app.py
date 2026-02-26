@@ -12,43 +12,31 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 if arquivo:
 
     try:
-        # Lê todas as abas
+        # Lê o Excel inteiro
         excel = pd.ExcelFile(arquivo, engine="openpyxl")
         abas = excel.sheet_names
-        
-        st.write("Abas encontradas no arquivo:", abas)
 
-        # Lê sempre a primeira aba disponível
-        df = pd.read_excel(excel, sheet_name=abas[0], dtype=str)
-        df = df.fillna("")
-        df.columns = df.columns.astype(str)
+        # Lê sempre a primeira aba válida
+        df = pd.read_excel(excel, sheet_name=abas[0])
 
-        st.success("Arquivo carregado com sucesso!")
-        st.dataframe(df.head())
+        # Remove linhas completamente vazias
+        df = df.dropna(how="all")
 
-        loteria = st.selectbox(
-            "Escolha a Loteria:",
-            ["Mega-Sena", "Lotofácil", "Quina", "Lotomania"]
-        )
+        # Converte tudo que for possível para número
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="ignore")
 
-        if st.button("Gerar Jogo Inteligente"):
+        # Detecta automaticamente apenas colunas numéricas
+        df_numeros = df.select_dtypes(include=["number"])
 
-            if loteria == "Mega-Sena":
-                numeros = sorted(random.sample(range(1, 61), 6))
+        if df_numeros.empty:
+            st.error("Nenhuma coluna numérica detectada no arquivo.")
+        else:
+            st.success("Arquivo carregado com sucesso!")
+            st.write("Colunas numéricas detectadas:")
+            st.write(df_numeros.columns.tolist())
+            st.dataframe(df_numeros.head())
 
-            elif loteria == "Lotofácil":
-                numeros = sorted(random.sample(range(1, 26), 15))
-
-            elif loteria == "Quina":
-                numeros = sorted(random.sample(range(1, 81), 5))
-
-            elif loteria == "Lotomania":
-                numeros = sorted(random.sample(range(0, 100), 20))
-
-            st.success("Jogo Gerado:")
-            st.write(numeros)
-
-    except Exception as e:
-        st.error("Erro ao ler o arquivo.")
-        st.write("Detalhe do erro:")
-        st.write(e)
+            loteria = st.selectbox(
+                "Escolha a Loteria:",
+                ["Mega-Sena", "
