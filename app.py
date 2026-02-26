@@ -1,27 +1,33 @@
 import streamlit as st
+import pandas as pd
 import random
 
 st.set_page_config(page_title="Extremo Master IA PRO", layout="centered")
 
 st.title("🔥 EXTREMO MASTER IA PRO")
-st.write("Sistema Inteligente de Geração Estatística")
+st.write("Sistema Inteligente com Base em Resultados Reais")
 
-loteria = st.selectbox(
-    "Escolha a Loteria:",
-    ["Mega-Sena (6 números)", "Lotofácil (15 números)", "Lotomania (20 números)"]
-)
+# Upload do Excel
+arquivo = st.file_uploader("Envie o arquivo Excel com resultados oficiais", type=["xlsx"])
 
-def gerar_numeros(qtd, minimo, maximo):
-    return sorted(random.sample(range(minimo, maximo + 1), qtd))
+if arquivo:
+    df = pd.read_excel(arquivo)
+    st.success("Arquivo carregado com sucesso!")
+    st.write("Visualização dos dados:")
+    st.dataframe(df.head())
 
-if st.button("Gerar Jogo Inteligente"):
-    
-    if "Mega" in loteria:
-        numeros = gerar_numeros(6, 1, 60)
-    elif "Lotofácil" in loteria:
-        numeros = gerar_numeros(15, 1, 25)
-    else:
-        numeros = gerar_numeros(20, 0, 99)
-    
-    st.success("Jogo Gerado:")
-    st.write(numeros)
+    loteria = st.selectbox(
+        "Escolha a Loteria:",
+        ["Mega-Sena", "Lotofácil", "Lotomania"]
+    )
+
+    if st.button("Gerar Jogo Inteligente"):
+        if loteria == "Mega-Sena":
+            numeros = sorted(random.sample(range(1, 61), 6))
+        elif loteria == "Lotofácil":
+            numeros = sorted(random.sample(range(1, 26), 15))
+        else:
+            numeros = sorted(random.sample(range(0, 100), 20))
+
+        st.success("Jogo Gerado:")
+        st.write(numeros)
