@@ -12,26 +12,26 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 
 if arquivo is not None:
     try:
-        # Lê tudo como string
+        # Lê tudo como string, sem cabeçalho
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
 
         # Remove linhas totalmente vazias
         df = df.dropna(how="all")
 
-        # Função para extrair números válidos, ignora qualquer '-'
-        def extrair_numeros(celula):
+        # Função que retorna uma lista de números válidos de cada célula
+        def extrair_numeros_lista(celula):
             if pd.isna(celula):
-                return pd.NA
-            # Extrai todos os dígitos
+                return []
+            # Extrai todos os dígitos na célula
             numeros = re.findall(r'\d+', str(celula))
-            # Retorna o primeiro número encontrado ou NaN se não houver
-            return int(numeros[0]) if numeros else pd.NA
+            return [int(n) for n in numeros] if numeros else []
 
         # Aplica função em todo o dataframe
-        df_numeros = df.applymap(extrair_numeros)
+        df_listas = df.applymap(extrair_numeros_lista)
 
         st.success("Arquivo carregado com sucesso!")
-        st.dataframe(df_numeros.head(10))
+        st.write("Visualização das primeiras 10 linhas (listas de dezenas extraídas):")
+        st.dataframe(df_listas.head(10))
 
         loteria = st.selectbox(
             "Escolha a Loteria:",
