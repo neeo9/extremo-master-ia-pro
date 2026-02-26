@@ -11,7 +11,9 @@ st.write("Sistema Inteligente com Base em Resultados Reais")
 arquivo = st.file_uploader("Envie o arquivo Excel com resultados oficiais", type=["xlsx"])
 
 if arquivo:
-    df = pd.read_excel(arquivo)
+    df = pd.read_excel(arquivo, engine="openpyxl", dtype=str)
+df = df.fillna("")
+df.columns = df.columns.astype(str)
     st.success("Arquivo carregado com sucesso!")
     st.write("Visualização dos dados:")
     st.dataframe(df.head())
