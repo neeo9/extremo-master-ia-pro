@@ -24,6 +24,4 @@ if arquivo is not None:
         df = df.dropna(how="all")
         df_numeros = df.applymap(extrair_numeros_lista)
         st.success("Arquivo carregado com sucesso!")
-        st.write("Visualização das primeiras linhas (listas de dezenas):")
-        st.dataframe(df_numeros.head(10))
-    except Exception as e:
+        st.write("
