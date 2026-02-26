@@ -12,26 +12,20 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 if arquivo is not None:
 
     try:
-        # Lê tudo como TEXTO (evita erro do hífen)
-        df = pd.read_excel(arquivo, engine="openpyxl", dtype=str)
+        # Lê sem conversão automática
+        df = pd.read_excel(arquivo, engine="openpyxl", header=None)
+
+        # Converte tudo manualmente para string
+        df = df.astype(str)
+
+        # Remove hífens
+        df = df.replace("-", "")
 
         # Remove linhas totalmente vazias
         df = df.dropna(how="all")
 
-        # Substitui hífen por vazio
-        df = df.replace("-", "")
-
-        # Mantém apenas colunas que parecem dezenas (até 20 colunas numéricas)
-        colunas_dezenas = df.columns[2:22]  # ignora Concurso e Data
-
-        df_dezenas = df[colunas_dezenas]
-
-        # Converte apenas essas colunas para número
-        for col in df_dezenas.columns:
-            df_dezenas[col] = pd.to_numeric(df_dezenas[col], errors="coerce")
-
         st.success("Arquivo carregado com sucesso.")
-        st.dataframe(df_dezenas.head())
+        st.dataframe(df.head())
 
         loteria = st.selectbox(
             "Escolha a Loteria:",
