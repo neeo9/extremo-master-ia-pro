@@ -10,12 +10,13 @@ st.write("Sistema Inteligente com Resultados Oficiais e Ciclo das Dezenas")
 # Upload de arquivo
 arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xlsx"])
 
-# Função para extrair números válidos (ignora hífen e caracteres inválidos)
+# Função robusta para extrair números válidos (ignora hífen, espaços e caracteres inválidos)
 def extrair_numeros_lista(celula):
     if pd.isna(celula):
         return []
-    numeros = re.findall(r'\d+', str(celula))
-    return [int(n) for n in numeros] if numeros else []
+    # Extrai apenas números válidos, ignora qualquer outro caractere
+    numeros = [int(n) for n in re.findall(r'\d+', str(celula)) if n.isdigit()]
+    return numeros
 
 df_numeros = None
 if arquivo is not None:
