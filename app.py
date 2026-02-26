@@ -12,10 +12,7 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 
 # Função definitiva para extrair números válidos
 def extrair_numeros_lista(celula):
-    """
-    Retorna uma lista de números inteiros válidos.
-    Ignora células vazias, hífen(s), espaços e caracteres inválidos.
-    """
+    """Retorna lista de números inteiros válidos, ignorando hífens, espaços ou caracteres inválidos"""
     if pd.isna(celula):
         return []
     return [int(n) for n in re.findall(r'\d+', str(celula))]
@@ -27,7 +24,7 @@ if arquivo is not None:
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
         
-        # 🔹 Pré-limpeza definitiva: substitui qualquer célula sem números por None
+        # 🔹 Pré-limpeza definitiva: células sem números viram None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
         
         # Extrai números de forma segura
