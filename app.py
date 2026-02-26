@@ -12,17 +12,19 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 
 if arquivo is not None:
     try:
-        # Lê tudo como string, sem cabeçalho
+        # Lê tudo como string
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
 
         # Remove linhas totalmente vazias
         df = df.dropna(how="all")
 
-        # Função para extrair números válidos
+        # Função para extrair números válidos, ignora qualquer '-'
         def extrair_numeros(celula):
             if pd.isna(celula):
                 return pd.NA
+            # Extrai todos os dígitos
             numeros = re.findall(r'\d+', str(celula))
+            # Retorna o primeiro número encontrado ou NaN se não houver
             return int(numeros[0]) if numeros else pd.NA
 
         # Aplica função em todo o dataframe
