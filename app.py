@@ -7,18 +7,23 @@ st.set_page_config(page_title="Extremo Master IA PRO", layout="centered")
 st.title("🔥 EXTREMO MASTER IA PRO")
 st.write("Sistema Inteligente com Resultados Oficiais")
 
-# Upload do Excel
 arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xlsx"])
 
 if arquivo:
 
     try:
-        df = pd.read_excel(arquivo, engine="openpyxl", dtype=str)
+        # Lê todas as abas
+        excel = pd.ExcelFile(arquivo, engine="openpyxl")
+        abas = excel.sheet_names
+        
+        st.write("Abas encontradas no arquivo:", abas)
+
+        # Lê sempre a primeira aba disponível
+        df = pd.read_excel(excel, sheet_name=abas[0], dtype=str)
         df = df.fillna("")
         df.columns = df.columns.astype(str)
 
         st.success("Arquivo carregado com sucesso!")
-        st.write("Pré-visualização dos dados:")
         st.dataframe(df.head())
 
         loteria = st.selectbox(
@@ -44,5 +49,6 @@ if arquivo:
             st.write(numeros)
 
     except Exception as e:
-        st.error("Erro ao ler o arquivo. Verifique se é o Excel oficial.")
+        st.error("Erro ao ler o arquivo.")
+        st.write("Detalhe do erro:")
         st.write(e)
