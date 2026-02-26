@@ -12,19 +12,22 @@ arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xl
 if arquivo is not None:
 
     try:
-        # Lê sem conversão automática
+        # Lê o Excel sem tentar converter automaticamente
         df = pd.read_excel(arquivo, engine="openpyxl", header=None)
 
-        # Converte tudo manualmente para string
+        # Converte tudo para string
         df = df.astype(str)
 
-        # Remove hífens
-        df = df.replace("-", "")
+        # Remove qualquer caractere que não seja número
+        df = df.replace(r"[^0-9]", "", regex=True)
+
+        # Substitui células vazias por NaN
+        df = df.replace("", pd.NA)
 
         # Remove linhas totalmente vazias
         df = df.dropna(how="all")
 
-        st.success("Arquivo carregado com sucesso.")
+        st.success("Arquivo carregado com sucesso!")
         st.dataframe(df.head())
 
         loteria = st.selectbox(
