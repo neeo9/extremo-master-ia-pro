@@ -26,10 +26,13 @@ if arquivo is not None:
         # Lê o Excel
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
-        # Pré-limpeza: substitui células que não contenham números por None
+        
+        # 🔹 Pré-limpeza definitiva: substitui qualquer célula sem números por None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
-        # Extrai números seguros
+        
+        # Extrai números de forma segura
         df_numeros = df.applymap(extrair_numeros_lista)
+        
         st.success("Arquivo carregado com sucesso!")
         st.write("Visualização das primeiras linhas (listas de dezenas):")
         st.dataframe(df_numeros.head(10))
