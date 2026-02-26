@@ -15,15 +15,21 @@ if arquivo is not None:
         excel = pd.ExcelFile(arquivo, engine="openpyxl")
         df = pd.read_excel(excel, sheet_name=0)
 
+        # Remove linhas totalmente vazias
         df = df.dropna(how="all")
 
-        for col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="ignore")
+        # Substitui hífen por vazio
+        df = df.replace("-", "")
 
+        # Converte para número apenas o que for possível
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        # Mantém apenas colunas numéricas
         df_numeros = df.select_dtypes(include=["number"])
 
         if df_numeros.empty:
-            st.error("Nenhuma coluna numerica detectada no arquivo.")
+            st.error("Nenhuma coluna numerica detectada.")
         else:
             st.success("Arquivo carregado com sucesso.")
             st.dataframe(df_numeros.head())
