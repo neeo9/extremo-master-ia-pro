@@ -7,25 +7,9 @@ st.set_page_config(page_title="Extremo Master IA PRO - Monte Carlo", layout="cen
 st.title("EXTREMO MASTER IA PRO - Monte Carlo")
 st.write("Sistema Inteligente com Resultados Oficiais, Ciclo das Dezenas e Simulação Monte Carlo")
 
-# Upload do arquivo Excel
+# ===================== UPLOAD =====================
 arquivo = st.file_uploader("Envie o arquivo Excel oficial da loteria", type=["xlsx"])
 
-# Função de extração segura de números
-def extrair_numeros_lista(celula, loteria):
-    if pd.isna(celula):
-        return []
-    numeros = [int(n) for n in re.findall(r'\d+', str(celula))]
-    if loteria == "Lotomania":
-        numeros = [n for n in numeros if 0 <= n <= 99]  # Lotomania: 0 a 99
-    elif loteria == "Mega-Sena":
-        numeros = [n for n in numeros if 1 <= n <= 60]  # Mega-Sena: 1 a 60
-    elif loteria == "Quina":
-        numeros = [n for n in numeros if 1 <= n <= 80]
-    elif loteria == "Lotofacil":
-        numeros = [n for n in numeros if 1 <= n <= 25]
-    return numeros
-
-df_numeros = None
 loteria = st.selectbox(
     "Escolha a Loteria:",
     ["Mega-Sena", "Lotofacil", "Quina", "Lotomania"]
@@ -38,24 +22,37 @@ parametros = {
     "Lotomania": {"min": 0, "max": 99, "qtd": 20, "top": 20}
 }
 
+# ===================== FUNÇÕES =====================
+def extrair_numeros_lista(celula):
+    if pd.isna(celula):
+        return []
+    numeros = [int(n) for n in re.findall(r'\d+', str(celula))]
+    # Limites por loteria
+    if loteria == "Lotomania":
+        numeros = [n for n in numeros if 0 <= n <= 99]
+    elif loteria == "Mega-Sena":
+        numeros = [n for n in numeros if 1 <= n <= 60]
+    elif loteria == "Quina":
+        numeros = [n for n in numeros if 1 <= n <= 80]
+    elif loteria == "Lotofacil":
+        numeros = [n for n in numeros if 1 <= n <= 25]
+    return numeros
+
+# ===================== PROCESSAMENTO =====================
+df_numeros = None
 if arquivo is not None:
     try:
         df = pd.read_excel(arquivo, engine="openpyxl", header=None, dtype=str)
         df = df.dropna(how="all")
-        
-        # Pré-limpeza absoluta: qualquer célula sem dígito vira None
         df = df.applymap(lambda x: x if x and re.search(r'\d', str(x)) else None)
-        
-        # Extrai números de forma segura
-        df_numeros = df.applymap(lambda x: extrair_numeros_lista(x, loteria))
-        
+        df_numeros = df.applymap(extrair_numeros_lista)
         st.success("Arquivo carregado com sucesso!")
         st.dataframe(df_numeros.head(10))
     except Exception as e:
         st.error("Erro ao processar o arquivo.")
         st.write(str(e))
 
-# Ciclo das dezenas
+# ===================== CICLO DAS DEZENAS =====================
 def calcular_ciclo(df_hist):
     ciclos = {}
     for col in df_hist.columns:
@@ -68,7 +65,20 @@ def calcular_ciclo(df_hist):
                 ciclos[num] = len(df_hist)
     return ciclos
 
-# Monte Carlo para gerar 3 jogos distintos
+# ===================== FILTROS INTELIGENTES =====================
+def valido_jogo(jogo):
+    # Evita muitos números consecutivos
+    consecutivos = sum([1 for i in range(1, len(jogo)) if jogo[i] - jogo[i-1] == 1])
+    if consecutivos > 2:
+        return False
+    # Limita pares e ímpares
+    pares = sum([1 for n in jogo if n % 2 == 0])
+    impares = len(jogo) - pares
+    if loteria == "Mega-Sena" and (pares < 2 or impares < 2):
+        return False
+    return True
+
+# ===================== MONTE CARLO INTELIGENTE =====================
 def monte_carlo(df_hist, n_sim=500):
     if df_hist is not None:
         ciclos = calcular_ciclo(df_hist)
@@ -78,7 +88,6 @@ def monte_carlo(df_hist, n_sim=500):
                 if lista:
                     for n in lista:
                         freq[n] = freq.get(n, 0) + 1
-        # Mega-Sena: pegar 5 dezenas históricas
         if loteria == "Mega-Sena":
             dezenas_ouro = sorted(freq, key=freq.get, reverse=True)[:5]
         else:
@@ -89,12 +98,11 @@ def monte_carlo(df_hist, n_sim=500):
 
     melhores_jogos = []
     tentativas = 0
-    while len(melhores_jogos) < 3 and tentativas < 1000:
+    while len(melhores_jogos) < 3 and tentativas < 2000:
         candidatos = []
         for _ in range(n_sim):
             jogo = []
-
-            # Adiciona dezenas históricas
+            # Adiciona dezenas de ouro
             if loteria == "Mega-Sena":
                 jogo.extend(dezenas_ouro)
             elif dezenas_ouro:
@@ -102,7 +110,6 @@ def monte_carlo(df_hist, n_sim=500):
                     dezenas_ouro, min(len(dezenas_ouro), parametros[loteria]["qtd"]//2)
                 )
                 jogo.extend(ouro_jogo)
-
             # Completa com números aleatórios ponderados pelo ciclo
             while len(jogo) < parametros[loteria]["qtd"]:
                 n = random.randint(parametros[loteria]["min"], parametros[loteria]["max"])
@@ -110,27 +117,28 @@ def monte_carlo(df_hist, n_sim=500):
                     peso = 1 + ciclos.get(n,0)/max(ciclos.values()) if ciclos else 1
                     if random.random() < peso:
                         jogo.append(n)
-            candidatos.append(sorted(jogo))
-
-        candidatos.sort(key=lambda x: sum([ciclos.get(n,0) for n in x]))
-        melhor = candidatos[0]
-        if melhor not in melhores_jogos:
-            melhores_jogos.append(melhor)
+            jogo.sort()
+            if valido_jogo(jogo):
+                candidatos.append(jogo)
+        # Escolhe os melhores 3 jogos distintos
+        for c in candidatos:
+            if c not in melhores_jogos and len(melhores_jogos) < 3:
+                melhores_jogos.append(c)
         tentativas += 1
     return melhores_jogos
 
-# Botão de geração
-if st.button("Gerar 3 Jogos Monte Carlo"):
+# ===================== BOTÃO =====================
+if st.button("Gerar 3 Jogos Inteligentes"):
     if df_numeros is not None:
         jogos = monte_carlo(df_numeros, n_sim=500)
     else:
+        # Se sem histórico, gera aleatório + filtros
         jogos = []
         while len(jogos) < 3:
             numeros = sorted(random.sample(range(parametros[loteria]["min"], parametros[loteria]["max"]+1),
                                            parametros[loteria]["qtd"]))
-            if numeros not in jogos:
+            if valido_jogo(numeros) and numeros not in jogos:
                 jogos.append(numeros)
-
-    st.success("Jogos Gerados com Monte Carlo:")
+    st.success("Jogos Gerados Inteligentes:")
     for idx, jogo in enumerate(jogos, start=1):
         st.write(f"Jogo {idx}: {jogo}")
