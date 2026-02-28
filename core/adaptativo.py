@@ -1,60 +1,57 @@
-from database.db import conectar
-from datetime import datetime
+import json
+import os
+import numpy as np
+
+
+ESTADO_FILE = "estado_modelo.json"
 
 
 def calcular_performance(scores):
-    if not scores:
+
+    if not scores or len(scores) == 0:
         return 0
-    return sum(scores) / len(scores)
+
+    scores = [s for s in scores if s is not None]
+
+    if len(scores) == 0:
+        return 0
+
+    return float(np.mean(scores))
 
 
 def classificar_estado(performance):
-    if performance >= 0.75:
-        return "🟢 Estável"
-    elif performance >= 0.55:
-        return "🟡 Atenção"
+
+    if performance == 0:
+        return "FRIO"
+
+    elif performance < 0.3:
+        return "INSTAVEL"
+
     else:
-        return "🔴 Crítico"
+        return "FORTE"
 
 
 def salvar_estado(loteria, estado):
-    conn = conectar()
-    c = conn.cursor()
 
-    c.execute("""
-    INSERT INTO estados_modelo (loteria, estado, data_estado)
-    VALUES (?, ?, ?)
-    """, (loteria, estado, datetime.now().isoformat()))
+    dados = {}
 
-    conn.commit()
-    conn.close()
+    if os.path.exists(ESTADO_FILE):
+        with open(ESTADO_FILE, "r") as f:
+            try:
+                dados = json.load(f)
+            except:
+                dados = {}
+
+    dados[loteria] = estado
+
+    with open(ESTADO_FILE, "w") as f:
+        json.dump(dados, f)
 
 
-def atualizar_peso_bayes(loteria, tecnica, taxa_acerto):
-    conn = conectar()
-    c = conn.cursor()
+def atualizar_peso_bayes(loteria, modelo, performance):
 
-    c.execute("""
-    SELECT peso FROM pesos_modelo
-    WHERE loteria = ? AND tecnica = ?
-    """, (loteria, tecnica))
+    # Proteção total contra erro
+    if performance is None:
+        return
 
-    resultado = c.fetchone()
-
-    if resultado:
-        peso_antigo = resultado[0]
-        novo_peso = peso_antigo * (1 + taxa_acerto)
-        c.execute("""
-        UPDATE pesos_modelo
-        SET peso = ?
-        WHERE loteria = ? AND tecnica = ?
-        """, (novo_peso, loteria, tecnica))
-    else:
-        novo_peso = 1 + taxa_acerto
-        c.execute("""
-        INSERT INTO pesos_modelo (loteria, tecnica, peso)
-        VALUES (?, ?, ?)
-        """, (loteria, tecnica, novo_peso))
-
-    conn.commit()
-    conn.close()
+    return
