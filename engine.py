@@ -24,13 +24,30 @@ def configurar_loteria(loteria):
 
 
 def limpar_dataframe(df, universo):
-    df = df.select_dtypes(include=['int64', 'float64'])
-    df = df.replace('-', pd.NA)
-    df = df.dropna()
-    df = df.astype(int)
 
+    # Mantém apenas colunas numéricas ou texto
+    df = df.copy()
+
+    # Limpeza célula por célula
+    for col in df.columns:
+        df[col] = df[col].apply(lambda x: str(x).strip())
+
+    # Remove símbolos inválidos
+    df = df.replace(['-', '', 'nan', 'None'], pd.NA)
+
+    # Converte somente valores válidos
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    df = df.dropna(how='all')  # remove linhas totalmente vazias
+
+    # Converte para inteiro apenas valores válidos
+    df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
+
+    # Remove números fora do universo
     df = df.applymap(lambda x: x if x in universo else None)
-    df = df.dropna()
+
+    df = df.dropna(how='all')
 
     return df
 
