@@ -1,8 +1,14 @@
 import pandas as pd
+import random
 from core.scoring import calcular_frequencia, calcular_atraso, calcular_score_dinamico
 from core.genetic import evoluir
 from core.montecarlo import validar_jogos, simular_jogo
-from core.adaptativo import calcular_performance, classificar_estado, salvar_estado, atualizar_peso_bayes
+from core.adaptativo import (
+    calcular_performance,
+    classificar_estado,
+    salvar_estado,
+    atualizar_peso_bayes,
+)
 
 
 def configurar_loteria(loteria):
@@ -25,21 +31,21 @@ def configurar_loteria(loteria):
 
 def limpar_dataframe(df, universo):
 
-    # Mantém apenas colunas numéricas ou texto
     df = df.copy()
 
-    # Limpeza célula por célula
+    # Converte tudo para string e limpa espaços
     for col in df.columns:
-        df[col] = df[col].apply(lambda x: str(x).strip())
+        df[col] = df[col].astype(str).str.strip()
 
-    # Remove símbolos inválidos
+    # Remove símbolos inválidos comuns
     df = df.replace(['-', '', 'nan', 'None'], pd.NA)
 
-    # Converte somente valores válidos
+    # Converte para número de forma segura
     for col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    df = df.dropna(how='all')  # remove linhas totalmente vazias
+    # Remove linhas totalmente vazias
+    df = df.dropna(how='all')
 
     # Converte para inteiro apenas valores válidos
     df = df.applymap(lambda x: int(x) if pd.notna(x) else None)
@@ -58,12 +64,16 @@ def executar_modelo(df, loteria):
 
     df = limpar_dataframe(df, universo)
 
+    if df.empty:
+        raise ValueError("Arquivo sem dados válidos após limpeza.")
+
     freq = calcular_frequencia(df)
     atraso = calcular_atraso(df, universo)
-   if not freq:
-    raise ValueError("Arquivo sem dados válidos após limpeza.")
 
-score = calcular_score_dinamico(freq, atraso)
+    if not freq:
+        raise ValueError("Não foi possível calcular frequência.")
+
+    score = calcular_score_dinamico(freq, atraso)
 
     jogos = evoluir(universo, tamanho_jogo, score)
 
@@ -73,7 +83,6 @@ score = calcular_score_dinamico(freq, atraso)
         jogo = list(set([n for n in jogo if n in universo]))
 
         while len(jogo) < tamanho_jogo:
-            import random
             novo = random.choice(universo)
             if novo not in jogo:
                 jogo.append(novo)
@@ -82,7 +91,11 @@ score = calcular_score_dinamico(freq, atraso)
 
     jogos_validados = validar_jogos(jogos_corrigidos, universo, tamanho_jogo)
 
-    scores_mc = [simular_jogo(j, universo, tamanho_jogo) for j in jogos_validados]
+    scores_mc = [
+        simular_jogo(j, universo, tamanho_jogo)
+        for j in jogos_validados
+    ]
+
     performance = calcular_performance(scores_mc)
 
     estado = classificar_estado(performance)
