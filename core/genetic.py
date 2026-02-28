@@ -2,7 +2,7 @@ import random
 
 
 def gerar_populacao(universo, tamanho_jogo, tamanho_pop=300):
-    return [random.sample(universo, tamanho_jogo) for _ in range(tamanho_pop)]
+    return [sorted(random.sample(universo, tamanho_jogo)) for _ in range(tamanho_pop)]
 
 
 def fitness(jogo, score_dict):
@@ -14,14 +14,16 @@ def selecionar(populacao, score_dict, elite=80):
     return populacao[:elite]
 
 
-def crossover(pai1, pai2, tamanho_jogo):
-    corte = tamanho_jogo // 2
-    filho = list(set(pai1[:corte] + pai2[corte:]))
+def crossover(pai1, pai2, universo, tamanho_jogo):
+    filho = list(set(pai1[:len(pai1)//2] + pai2[len(pai2)//2:]))
 
+    # Corrige duplicados e completa até tamanho correto
     while len(filho) < tamanho_jogo:
-        filho.append(random.choice(pai1))
+        novo = random.choice(universo)
+        if novo not in filho:
+            filho.append(novo)
 
-    return filho[:tamanho_jogo]
+    return sorted(filho[:tamanho_jogo])
 
 
 def mutacao(jogo, universo, taxa=0.15):
@@ -31,13 +33,16 @@ def mutacao(jogo, universo, taxa=0.15):
         while novo in jogo:
             novo = random.choice(universo)
         jogo[pos] = novo
-    return jogo
+
+    return sorted(list(set(jogo)))
 
 
 def evoluir(universo, tamanho_jogo, score_dict, geracoes=30):
+
     populacao = gerar_populacao(universo, tamanho_jogo)
 
     for _ in range(geracoes):
+
         elite = selecionar(populacao, score_dict)
 
         nova_pop = elite.copy()
@@ -46,13 +51,19 @@ def evoluir(universo, tamanho_jogo, score_dict, geracoes=30):
             pai1 = elite[i]
             pai2 = elite[-i-1]
 
-            filho = crossover(pai1, pai2, tamanho_jogo)
+            filho = crossover(pai1, pai2, universo, tamanho_jogo)
             filho = mutacao(filho, universo)
 
-            nova_pop.append(filho)
+            # Garante tamanho fixo
+            while len(filho) < tamanho_jogo:
+                novo = random.choice(universo)
+                if novo not in filho:
+                    filho.append(novo)
+
+            nova_pop.append(sorted(filho[:tamanho_jogo]))
 
         populacao = nova_pop
 
     populacao.sort(key=lambda x: fitness(x, score_dict), reverse=True)
 
-    return populacao[:3]
+    return [sorted(j) for j in populacao[:3]]
