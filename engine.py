@@ -60,7 +60,10 @@ def executar_modelo(df, loteria):
 
     freq = calcular_frequencia(df)
     atraso = calcular_atraso(df, universo)
-    score = calcular_score_dinamico(freq, atraso)
+   if not freq:
+    raise ValueError("Arquivo sem dados válidos após limpeza.")
+
+score = calcular_score_dinamico(freq, atraso)
 
     jogos = evoluir(universo, tamanho_jogo, score)
 
