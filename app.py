@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import random
 import re
+from io import BytesIO
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="wide")
 
@@ -13,15 +14,33 @@ CONFIG = {
 }
 
 # ==============================
-# EXTRAÇÃO SEGURA
+# LEITURA 100% SEGURA DO EXCEL
+# ==============================
+
+def ler_excel_seguro(arquivo):
+    bytes_data = arquivo.read()
+    buffer = BytesIO(bytes_data)
+
+    # Lê sem inferência automática problemática
+    df = pd.read_excel(
+        buffer,
+        engine="openpyxl",
+        header=None,
+        dtype=object
+    )
+
+    return df
+
+# ==============================
+# EXTRAÇÃO SEGURA DE NÚMEROS
 # ==============================
 
 def extrair_numeros_validos(df, limite):
     numeros = []
 
-    for coluna in df.columns:
-        for valor in df[coluna]:
-            if pd.isna(valor):
+    for linha in df.values:
+        for valor in linha:
+            if valor is None:
                 continue
 
             texto = str(valor)
@@ -49,7 +68,7 @@ def gerar_jogo_unico(total_range, quantidade):
 def executar_modelo(nome_loteria, df):
     config = CONFIG[nome_loteria]
 
-    # Apenas extrai números válidos (não converte DataFrame inteiro)
+    # Apenas extrai números válidos (não converte DataFrame)
     extrair_numeros_validos(df, config["range"])
 
     jogos = []
@@ -75,11 +94,7 @@ arquivo = st.file_uploader("Envie o arquivo Excel com os resultados", type=["xls
 
 if arquivo:
     try:
-        # 🔥 LEITURA ULTRA SEGURA
-        df = pd.read_excel(arquivo, engine="openpyxl")
-
-        # Força tudo para string depois da leitura
-        df = df.astype(str)
+        df = ler_excel_seguro(arquivo)
 
         st.success("Arquivo carregado com sucesso!")
 
