@@ -16,64 +16,61 @@ CONFIG = {
 }
 
 # ==============================
-# LIMPEZA ROBUSTA DO EXCEL
+# LIMPEZA ULTRA ROBUSTA
 # ==============================
 
 def limpar_dados(df):
     df = df.copy()
 
-    # Converte tudo para string e remove espaços
-    df = df.applymap(lambda x: str(x).strip())
+    # Garantir que tudo é string
+    df = df.astype(str)
 
-    # Remove qualquer caractere que não seja número
+    # Remover espaços
+    df = df.applymap(lambda x: x.strip())
+
+    # Remover qualquer coisa que não seja número
     df = df.replace(r"[^\d]", "", regex=True)
 
-    # Converte para numérico com segurança
+    # Converter para número com segurança total
     df = df.apply(pd.to_numeric, errors="coerce")
 
-    # Remove colunas totalmente vazias
+    # Remover colunas totalmente vazias
     df = df.dropna(axis=1, how="all")
 
-    # Remove linhas totalmente vazias
+    # Remover linhas totalmente vazias
     df = df.dropna(axis=0, how="all")
 
-    # Preenche NaN restantes com 0
-    df = df.fillna(0).astype(int)
+    # Substituir NaN por 0
+    df = df.fillna(0)
 
     return df
 
 # ==============================
-# GERADOR DE JOGO ÚNICO
+# GERADOR
 # ==============================
 
 def gerar_jogo_unico(total_range, quantidade):
-    numeros = set()
-
-    while len(numeros) < quantidade:
-        numeros.add(random.randint(1, total_range))
-
-    return sorted(list(numeros))
+    return sorted(random.sample(range(1, total_range + 1), quantidade))
 
 # ==============================
-# MOTOR PRINCIPAL
+# MOTOR
 # ==============================
 
 def executar_modelo(nome_loteria, df):
     config = CONFIG[nome_loteria]
 
-    # Limpa os dados (principalmente importante p/ Lotomania)
     df = limpar_dados(df)
 
     jogos = []
-
     for _ in range(3):
-        jogo = gerar_jogo_unico(config["range"], config["qtd"])
-        jogos.append(jogo)
+        jogos.append(
+            gerar_jogo_unico(config["range"], config["qtd"])
+        )
 
     return jogos
 
 # ==============================
-# INTERFACE STREAMLIT
+# INTERFACE
 # ==============================
 
 st.title("🔥 EXTREMO MASTER IA PRO")
@@ -87,7 +84,9 @@ arquivo = st.file_uploader("Envie o arquivo Excel com os resultados", type=["xls
 
 if arquivo:
     try:
-        df = pd.read_excel(arquivo)
+        # 🔥 AQUI ESTÁ A CORREÇÃO REAL
+        df = pd.read_excel(arquivo, dtype=str)
+
         st.success("Arquivo carregado com sucesso!")
 
         if st.button("Gerar Palpites"):
