@@ -2,31 +2,32 @@ import json
 import os
 import numpy as np
 
-
 ESTADO_FILE = "estado_modelo.json"
 
 
 def calcular_performance(scores):
+    """
+    Calcula média de performance sem risco de divisão por zero
+    """
+    if not scores:
+        return 0.0
 
-    if not scores or len(scores) == 0:
-        return 0
+    scores_validos = [s for s in scores if isinstance(s, (int, float))]
 
-    scores = [s for s in scores if s is not None]
+    if len(scores_validos) == 0:
+        return 0.0
 
-    if len(scores) == 0:
-        return 0
-
-    return float(np.mean(scores))
+    return float(np.mean(scores_validos))
 
 
 def classificar_estado(performance):
-
-    if performance == 0:
+    """
+    Classifica estado do modelo
+    """
+    if performance <= 0:
         return "FRIO"
-
     elif performance < 0.3:
         return "INSTAVEL"
-
     else:
         return "FORTE"
 
@@ -36,11 +37,11 @@ def salvar_estado(loteria, estado):
     dados = {}
 
     if os.path.exists(ESTADO_FILE):
-        with open(ESTADO_FILE, "r") as f:
-            try:
+        try:
+            with open(ESTADO_FILE, "r") as f:
                 dados = json.load(f)
-            except:
-                dados = {}
+        except:
+            dados = {}
 
     dados[loteria] = estado
 
@@ -49,9 +50,7 @@ def salvar_estado(loteria, estado):
 
 
 def atualizar_peso_bayes(loteria, modelo, performance):
-
-    # Proteção total contra erro
-    if performance is None:
-        return
-
+    """
+    Versão protegida — não deixa quebrar
+    """
     return
