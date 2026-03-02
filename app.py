@@ -1,12 +1,9 @@
 import streamlit as st
 import pandas as pd
 import random
+import re
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="wide")
-
-# ==============================
-# CONFIGURAÇÃO DAS LOTERIAS
-# ==============================
 
 CONFIG = {
     "Mega-Sena": {"range": 60, "qtd": 6},
@@ -16,34 +13,25 @@ CONFIG = {
 }
 
 # ==============================
-# LIMPEZA ULTRA ROBUSTA
+# EXTRAÇÃO SEGURA DE NÚMEROS
 # ==============================
 
-def limpar_dados(df):
-    df = df.copy()
+def extrair_numeros_validos(df, limite):
+    numeros_validos = []
 
-    # Garantir que tudo é string
-    df = df.astype(str)
+    for col in df.columns:
+        for valor in df[col]:
+            texto = str(valor)
 
-    # Remover espaços
-    df = df.applymap(lambda x: x.strip())
+            # Extrai apenas números do texto
+            encontrados = re.findall(r"\d+", texto)
 
-    # Remover qualquer coisa que não seja número
-    df = df.replace(r"[^\d]", "", regex=True)
+            for num in encontrados:
+                n = int(num)
+                if 1 <= n <= limite:
+                    numeros_validos.append(n)
 
-    # Converter para número com segurança total
-    df = df.apply(pd.to_numeric, errors="coerce")
-
-    # Remover colunas totalmente vazias
-    df = df.dropna(axis=1, how="all")
-
-    # Remover linhas totalmente vazias
-    df = df.dropna(axis=0, how="all")
-
-    # Substituir NaN por 0
-    df = df.fillna(0)
-
-    return df
+    return numeros_validos
 
 # ==============================
 # GERADOR
@@ -59,7 +47,8 @@ def gerar_jogo_unico(total_range, quantidade):
 def executar_modelo(nome_loteria, df):
     config = CONFIG[nome_loteria]
 
-    df = limpar_dados(df)
+    # 🔥 Não convertemos mais o DataFrame inteiro
+    extrair_numeros_validos(df, config["range"])
 
     jogos = []
     for _ in range(3):
@@ -84,7 +73,7 @@ arquivo = st.file_uploader("Envie o arquivo Excel com os resultados", type=["xls
 
 if arquivo:
     try:
-        # 🔥 AQUI ESTÁ A CORREÇÃO REAL
+        # Lê tudo como texto SEM tentar converter
         df = pd.read_excel(arquivo, dtype=str)
 
         st.success("Arquivo carregado com sucesso!")
