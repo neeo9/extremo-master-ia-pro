@@ -1,49 +1,41 @@
 import streamlit as st
 import pandas as pd
-from database.db import criar_tabelas
 from core.engine import executar_modelo
-
-# Inicializa banco
-criar_tabelas()
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="wide")
 
-st.title("🔥 EXTREMO MASTER IA PRO — IA Evolutiva Institucional")
+st.title("EXTREMO MASTER IA PRO")
+st.markdown("Sistema Genético + Monte Carlo + Bayesiano")
 
-st.markdown("Sistema com GA + Monte Carlo + Reforço Bayesiano + Adaptativo Automático")
-
-# Seleção de loteria
 loteria = st.selectbox(
-    "Selecione a Loteria",
+    "Escolha a Loteria:",
     ["MEGA-SENA", "LOTOFACIL", "QUINA", "LOTOMANIA"]
 )
 
-# Upload do Excel
-arquivo = st.file_uploader("Importar arquivo Excel de resultados", type=["xlsx"])
+uploaded_file = st.file_uploader("Envie o arquivo Excel com resultados", type=["xlsx"])
 
-if arquivo:
+if uploaded_file:
 
     try:
-        df = pd.read_excel(arquivo, engine="openpyxl")
+        # 🔥 LEITURA 100% SEGURA
+        df = pd.read_excel(uploaded_file, dtype=str)
 
-        st.success("Arquivo carregado com sucesso.")
+        st.success("Arquivo carregado com sucesso!")
 
-        if st.button("🎯 Gerar 3 Jogos Refinados Econômicos"):
+        if st.button("Gerar Palpites Inteligentes"):
 
-            with st.spinner("IA evoluindo e simulando cenários..."):
+            jogos, estado, performance = executar_modelo(df, loteria)
 
-                jogos, estado, performance = executar_modelo(df, loteria)
+            st.subheader("Palpites Gerados:")
 
-            st.subheader("📊 Estado Atual do Modelo")
-            st.write(f"Estado: {estado}")
-            st.write(f"Performance média Monte Carlo: {round(performance, 4)}")
+            for i, jogo in enumerate(jogos, 1):
+                st.write(f"Jogo {i}: {jogo}")
 
-            st.subheader("🎯 3 Jogos Refinados Econômicos")
-            for i, jogo in enumerate(jogos):
-                st.write(f"Jogo {i+1}: {sorted(jogo)}")
+            st.subheader("Estado do Modelo:")
+            st.write(estado)
+
+            st.subheader("Performance Monte Carlo:")
+            st.write(performance)
 
     except Exception as e:
-        st.error(f"Erro ao processar arquivo: {e}")
-
-else:
-    st.info("Importe um arquivo Excel para iniciar.")
+        st.error(f"Erro ao processar arquivo: {str(e)}")
