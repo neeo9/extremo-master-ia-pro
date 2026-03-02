@@ -13,25 +13,27 @@ CONFIG = {
 }
 
 # ==============================
-# EXTRAÇÃO SEGURA DE NÚMEROS
+# EXTRAÇÃO SEGURA
 # ==============================
 
 def extrair_numeros_validos(df, limite):
-    numeros_validos = []
+    numeros = []
 
-    for col in df.columns:
-        for valor in df[col]:
+    for coluna in df.columns:
+        for valor in df[coluna]:
+            if pd.isna(valor):
+                continue
+
             texto = str(valor)
 
-            # Extrai apenas números do texto
             encontrados = re.findall(r"\d+", texto)
 
-            for num in encontrados:
-                n = int(num)
-                if 1 <= n <= limite:
-                    numeros_validos.append(n)
+            for n in encontrados:
+                num = int(n)
+                if 1 <= num <= limite:
+                    numeros.append(num)
 
-    return numeros_validos
+    return numeros
 
 # ==============================
 # GERADOR
@@ -47,7 +49,7 @@ def gerar_jogo_unico(total_range, quantidade):
 def executar_modelo(nome_loteria, df):
     config = CONFIG[nome_loteria]
 
-    # 🔥 Não convertemos mais o DataFrame inteiro
+    # Apenas extrai números válidos (não converte DataFrame inteiro)
     extrair_numeros_validos(df, config["range"])
 
     jogos = []
@@ -73,8 +75,11 @@ arquivo = st.file_uploader("Envie o arquivo Excel com os resultados", type=["xls
 
 if arquivo:
     try:
-        # Lê tudo como texto SEM tentar converter
-        df = pd.read_excel(arquivo, dtype=str)
+        # 🔥 LEITURA ULTRA SEGURA
+        df = pd.read_excel(arquivo, engine="openpyxl")
+
+        # Força tudo para string depois da leitura
+        df = df.astype(str)
 
         st.success("Arquivo carregado com sucesso!")
 
