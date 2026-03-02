@@ -4,6 +4,10 @@ import random
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="wide")
 
+# ==============================
+# CONFIGURAÇÃO DAS LOTERIAS
+# ==============================
+
 CONFIG = {
     "Mega-Sena": {"range": 60, "qtd": 6},
     "Lotofácil": {"range": 25, "qtd": 15},
@@ -11,14 +15,36 @@ CONFIG = {
     "Lotomania": {"range": 100, "qtd": 50},
 }
 
-def limpar_dados(df):
-    df = df.replace("-", 0)
-    df = df.fillna(0)
+# ==============================
+# LIMPEZA ROBUSTA DO EXCEL
+# ==============================
 
-    for col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+def limpar_dados(df):
+    df = df.copy()
+
+    # Converte tudo para string e remove espaços
+    df = df.applymap(lambda x: str(x).strip())
+
+    # Remove qualquer caractere que não seja número
+    df = df.replace(r"[^\d]", "", regex=True)
+
+    # Converte para numérico com segurança
+    df = df.apply(pd.to_numeric, errors="coerce")
+
+    # Remove colunas totalmente vazias
+    df = df.dropna(axis=1, how="all")
+
+    # Remove linhas totalmente vazias
+    df = df.dropna(axis=0, how="all")
+
+    # Preenche NaN restantes com 0
+    df = df.fillna(0).astype(int)
 
     return df
+
+# ==============================
+# GERADOR DE JOGO ÚNICO
+# ==============================
 
 def gerar_jogo_unico(total_range, quantidade):
     numeros = set()
@@ -28,8 +54,14 @@ def gerar_jogo_unico(total_range, quantidade):
 
     return sorted(list(numeros))
 
+# ==============================
+# MOTOR PRINCIPAL
+# ==============================
+
 def executar_modelo(nome_loteria, df):
     config = CONFIG[nome_loteria]
+
+    # Limpa os dados (principalmente importante p/ Lotomania)
     df = limpar_dados(df)
 
     jogos = []
@@ -39,6 +71,10 @@ def executar_modelo(nome_loteria, df):
         jogos.append(jogo)
 
     return jogos
+
+# ==============================
+# INTERFACE STREAMLIT
+# ==============================
 
 st.title("🔥 EXTREMO MASTER IA PRO")
 
