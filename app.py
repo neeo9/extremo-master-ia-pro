@@ -1,14 +1,15 @@
-# EXTREMO MASTER IA PRO - VERSÃO 5000 À PROVA DE ERROS
+# EXTREMO MASTER IA PRO - VERSÃO 6000 LEITURA DIRETA OPENPYXL
 
 import streamlit as st
-import pandas as pd
 import random
+from openpyxl import load_workbook
 from io import BytesIO
+import pandas as pd
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="centered")
 
 st.title("🔥 EXTREMO MASTER IA PRO")
-st.markdown("### Versão 5000 - Sistema Absolutamente Seguro")
+st.markdown("### Versão 6000 - Leitura Direta e 100% Segura")
 
 CONFIG = {
     "Mega-Sena": {"faixa": 60, "qtd": 6},
@@ -17,32 +18,26 @@ CONFIG = {
     "Lotomania": {"faixa": 100, "qtd": 20},
 }
 
-
-def limpar_e_extrair(valor):
+def extrair_numeros_seguro(valor):
     numeros = []
     numero_atual = ""
 
-    try:
-        texto = str(valor)
+    texto = str(valor)
 
-        for caractere in texto:
-            if caractere.isdigit():
-                numero_atual += caractere
-            else:
-                if numero_atual != "":
-                    numero_int = int(numero_atual)
-                    if 1 <= numero_int <= 100:
-                        numeros.append(numero_int)
-                    numero_atual = ""
+    for caractere in texto:
+        if caractere.isdigit():
+            numero_atual += caractere
+        else:
+            if numero_atual != "":
+                numero_int = int(numero_atual)
+                if 1 <= numero_int <= 100:
+                    numeros.append(numero_int)
+                numero_atual = ""
 
-        # captura último número se existir
-        if numero_atual != "":
-            numero_int = int(numero_atual)
-            if 1 <= numero_int <= 100:
-                numeros.append(numero_int)
-
-    except:
-        pass
+    if numero_atual != "":
+        numero_int = int(numero_atual)
+        if 1 <= numero_int <= 100:
+            numeros.append(numero_int)
 
     return numeros
 
@@ -50,19 +45,17 @@ def limpar_e_extrair(valor):
 def processar_arquivo(uploaded_file):
     try:
         bytes_data = uploaded_file.read()
-        excel = pd.ExcelFile(BytesIO(bytes_data))
+        wb = load_workbook(filename=BytesIO(bytes_data), data_only=True)
 
         todos_numeros = []
 
-        for sheet in excel.sheet_names:
-            df = excel.parse(sheet)
-
-            for coluna in df.columns:
-                for valor in df[coluna]:
-                    numeros = limpar_e_extrair(valor)
+        for sheet in wb.worksheets:
+            for row in sheet.iter_rows(values_only=True):
+                for cell in row:
+                    numeros = extrair_numeros_seguro(cell)
                     todos_numeros.extend(numeros)
 
-        if len(todos_numeros) == 0:
+        if not todos_numeros:
             st.warning("Nenhum número válido encontrado.")
             return None
 
