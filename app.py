@@ -1,4 +1,4 @@
-# EXTREMO MASTER IA PRO - VERSÃO 1000 BLINDADA LOTOMANIA
+# EXTREMO MASTER IA PRO - VERSÃO 2000 ULTRA BLINDADA
 
 import streamlit as st
 import pandas as pd
@@ -8,7 +8,7 @@ import re
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="centered")
 
 st.title("🔥 EXTREMO MASTER IA PRO")
-st.markdown("### Versão 1000 - Lotomania 100% Corrigida")
+st.markdown("### Versão 2000 - Sistema Totalmente Blindado")
 
 CONFIG = {
     "Mega-Sena": {"faixa": 60, "qtd": 6},
@@ -17,15 +17,15 @@ CONFIG = {
     "Lotomania": {"faixa": 100, "qtd": 20},
 }
 
-# FUNÇÃO TOTALMENTE BLINDADA
+# FUNÇÃO TOTALMENTE SEGURA PARA EXTRAÇÃO
 def extrair_numeros(valor):
-    if pd.isna(valor):
+    if valor is None:
         return []
 
     try:
         texto = str(valor)
 
-        # Remove tudo que não for número
+        # Remove absolutamente tudo que não for número
         texto_limpo = re.sub(r'[^0-9]', ' ', texto)
 
         partes = texto_limpo.split()
@@ -34,9 +34,9 @@ def extrair_numeros(valor):
 
         for p in partes:
             try:
-                num = int(p)
-                if 1 <= num <= 100:
-                    numeros_validos.append(num)
+                numero = int(p)
+                if 1 <= numero <= 100:
+                    numeros_validos.append(numero)
             except:
                 continue
 
@@ -45,31 +45,36 @@ def extrair_numeros(valor):
     except:
         return []
 
+
 def processar_arquivo(uploaded_file, loteria):
     try:
-        df = pd.read_excel(uploaded_file)
+        # Força leitura como texto para evitar erro com "-"
+        df = pd.read_excel(uploaded_file, dtype=str)
+
         todos_numeros = []
 
-        for col in df.columns:
-            for valor in df[col]:
+        for coluna in df.columns:
+            for valor in df[coluna]:
                 numeros = extrair_numeros(valor)
-                todos_numeros.extend(numeros)
+                if numeros:
+                    todos_numeros.extend(numeros)
 
-        if not todos_numeros:
+        if len(todos_numeros) == 0:
             st.warning("Nenhum número válido encontrado no arquivo.")
             return None
 
-        freq = (
+        frequencia = (
             pd.Series(todos_numeros)
             .value_counts()
             .sort_index()
         )
 
-        return freq
+        return frequencia
 
     except Exception as e:
         st.error(f"Erro ao processar arquivo: {e}")
         return None
+
 
 def gerar_jogo(loteria):
     faixa = CONFIG[loteria]["faixa"]
@@ -78,6 +83,7 @@ def gerar_jogo(loteria):
     jogo = random.sample(range(1, faixa + 1), qtd)
     return sorted(jogo)
 
+
 # INTERFACE
 loteria = st.selectbox("Escolha a Loteria:", list(CONFIG.keys()))
 uploaded_file = st.file_uploader("Envie o arquivo Excel com os resultados", type=["xlsx"])
@@ -85,11 +91,11 @@ uploaded_file = st.file_uploader("Envie o arquivo Excel com os resultados", type
 if uploaded_file:
     st.success("Arquivo carregado com sucesso!")
 
-    freq = processar_arquivo(uploaded_file, loteria)
+    frequencia = processar_arquivo(uploaded_file, loteria)
 
-    if freq is not None:
+    if frequencia is not None:
         st.subheader("Frequência dos números encontrados:")
-        st.write(freq)
+        st.dataframe(frequencia)
 
         if st.button("Gerar Jogo Inteligente"):
             jogo = gerar_jogo(loteria)
