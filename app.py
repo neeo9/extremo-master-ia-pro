@@ -1,15 +1,14 @@
-# EXTREMO MASTER IA PRO - VERSÃO 4000 CORREÇÃO ABSOLUTA
+# EXTREMO MASTER IA PRO - VERSÃO 5000 À PROVA DE ERROS
 
 import streamlit as st
 import pandas as pd
 import random
-import re
 from io import BytesIO
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="centered")
 
 st.title("🔥 EXTREMO MASTER IA PRO")
-st.markdown("### Versão 4000 - Leitura Totalmente Segura")
+st.markdown("### Versão 5000 - Sistema Absolutamente Seguro")
 
 CONFIG = {
     "Mega-Sena": {"faixa": 60, "qtd": 6},
@@ -18,17 +17,38 @@ CONFIG = {
     "Lotomania": {"faixa": 100, "qtd": 20},
 }
 
-def extrair_numeros(valor):
+
+def limpar_e_extrair(valor):
+    numeros = []
+    numero_atual = ""
+
     try:
         texto = str(valor)
-        numeros = re.findall(r'\d+', texto)
-        return [int(n) for n in numeros if 1 <= int(n) <= 100]
+
+        for caractere in texto:
+            if caractere.isdigit():
+                numero_atual += caractere
+            else:
+                if numero_atual != "":
+                    numero_int = int(numero_atual)
+                    if 1 <= numero_int <= 100:
+                        numeros.append(numero_int)
+                    numero_atual = ""
+
+        # captura último número se existir
+        if numero_atual != "":
+            numero_int = int(numero_atual)
+            if 1 <= numero_int <= 100:
+                numeros.append(numero_int)
+
     except:
-        return []
+        pass
+
+    return numeros
+
 
 def processar_arquivo(uploaded_file):
     try:
-        # Lê como bytes primeiro
         bytes_data = uploaded_file.read()
         excel = pd.ExcelFile(BytesIO(bytes_data))
 
@@ -37,15 +57,12 @@ def processar_arquivo(uploaded_file):
         for sheet in excel.sheet_names:
             df = excel.parse(sheet)
 
-            # Converte tudo para string manualmente
-            df = df.astype(str)
-
             for coluna in df.columns:
                 for valor in df[coluna]:
-                    numeros = extrair_numeros(valor)
+                    numeros = limpar_e_extrair(valor)
                     todos_numeros.extend(numeros)
 
-        if not todos_numeros:
+        if len(todos_numeros) == 0:
             st.warning("Nenhum número válido encontrado.")
             return None
 
@@ -61,10 +78,12 @@ def processar_arquivo(uploaded_file):
         st.error(f"Erro ao processar arquivo: {e}")
         return None
 
+
 def gerar_jogo(loteria):
     faixa = CONFIG[loteria]["faixa"]
     qtd = CONFIG[loteria]["qtd"]
     return sorted(random.sample(range(1, faixa + 1), qtd))
+
 
 loteria = st.selectbox("Escolha a Loteria:", list(CONFIG.keys()))
 uploaded_file = st.file_uploader("Envie o arquivo Excel com os resultados", type=["xlsx"])
