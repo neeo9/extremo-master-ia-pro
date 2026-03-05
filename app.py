@@ -1,115 +1,155 @@
-# EXTREMO MASTER IA PRO - VERSÃO 7000 FINAL ESTÁVEL
+# EXTREMO MASTER IA PRO - VERSÃO 9500 COM PADRÃO CONDICIONAL
 
 import streamlit as st
-import random
+import requests
 import pandas as pd
-from openpyxl import load_workbook
-from io import BytesIO
+import random
+from collections import defaultdict
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="centered")
 
 st.title("🔥 EXTREMO MASTER IA PRO")
-st.markdown("### Versão 7000 - Compatível com CSV e XLSX")
+st.markdown("### EXTREMO MASTER REAL + PADRÃO CONDICIONAL")
 
 CONFIG = {
-    "Mega-Sena": {"faixa": 60, "qtd": 6},
-    "Lotofácil": {"faixa": 25, "qtd": 15},
-    "Quina": {"faixa": 80, "qtd": 5},
-    "Lotomania": {"faixa": 100, "qtd": 20},
+    "Mega-Sena": {"faixa": 60, "qtd": 6, "url": "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/"},
+    "Lotofácil": {"faixa": 25, "qtd": 15, "url": "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/"},
+    "Quina": {"faixa": 80, "qtd": 5, "url": "https://servicebus2.caixa.gov.br/portaldeloterias/api/quina/"},
+    "Lotomania": {"faixa": 100, "qtd": 20, "url": "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotomania/"},
 }
 
-def extrair_numeros(valor):
-    numeros = []
-    numero_atual = ""
+# -----------------------------------
+# BUSCAR HISTÓRICO COMPLETO
+# -----------------------------------
 
-    texto = str(valor)
+def buscar_historico(loteria):
+    base_url = CONFIG[loteria]["url"]
+    historico = []
+    concurso = 1
 
-    for c in texto:
-        if c.isdigit():
-            numero_atual += c
-        else:
-            if numero_atual:
-                numero_int = int(numero_atual)
-                if 1 <= numero_int <= 100:
-                    numeros.append(numero_int)
-                numero_atual = ""
+    while True:
+        try:
+            r = requests.get(base_url + str(concurso), timeout=5)
+            if r.status_code != 200:
+                break
 
-    if numero_atual:
-        numero_int = int(numero_atual)
-        if 1 <= numero_int <= 100:
-            numeros.append(numero_int)
+            dados = r.json()
+            if "listaDezenas" not in dados:
+                break
 
-    return numeros
+            dezenas = [int(n) for n in dados["listaDezenas"]]
+            historico.append(dezenas)
+            concurso += 1
 
+        except:
+            break
 
-def processar_csv(uploaded_file):
-    df = pd.read_csv(uploaded_file, dtype=str, sep=None, engine="python")
-    return df
+    return historico
 
+# -----------------------------------
+# CORRELAÇÃO CONDICIONAL
+# -----------------------------------
 
-def processar_xlsx(uploaded_file):
-    bytes_data = uploaded_file.read()
-    wb = load_workbook(filename=BytesIO(bytes_data), data_only=True)
+def calcular_correlacao_condicional(historico):
+    ocorrencias = defaultdict(int)
+    pares = defaultdict(int)
 
-    dados = []
+    for concurso in historico:
+        for x in concurso:
+            ocorrencias[x] += 1
+            for y in concurso:
+                if x != y:
+                    pares[(x, y)] += 1
 
-    for sheet in wb.worksheets:
-        for row in sheet.iter_rows(values_only=True):
-            dados.append(row)
+    correlacao = {}
 
-    df = pd.DataFrame(dados)
-    return df
+    for (x, y), count in pares.items():
+        correlacao[(x, y)] = count / ocorrencias[x]
 
+    return correlacao
 
-def processar_arquivo(uploaded_file):
-    try:
-        if uploaded_file.name.endswith(".csv"):
-            df = processar_csv(uploaded_file)
-        else:
-            df = processar_xlsx(uploaded_file)
+# -----------------------------------
+# GERADOR EXTREMO MASTER + CONDICIONAL
+# -----------------------------------
 
-        todos_numeros = []
-
-        for coluna in df.columns:
-            for valor in df[coluna]:
-                numeros = extrair_numeros(valor)
-                todos_numeros.extend(numeros)
-
-        if not todos_numeros:
-            st.warning("Nenhum número válido encontrado.")
-            return None
-
-        frequencia = (
-            pd.Series(todos_numeros)
-            .value_counts()
-            .sort_index()
-        )
-
-        return frequencia
-
-    except Exception as e:
-        st.error(f"Erro ao processar arquivo: {e}")
-        return None
-
-
-def gerar_jogo(loteria):
+def gerar_jogo_extremo(loteria, historico, correlacao):
     faixa = CONFIG[loteria]["faixa"]
     qtd = CONFIG[loteria]["qtd"]
-    return sorted(random.sample(range(1, faixa + 1), qtd))
 
+    # Frequência total
+    todas = [n for concurso in historico for n in concurso]
+    freq = pd.Series(todas).value_counts()
+    freq = freq.reindex(range(1, faixa+1), fill_value=0)
+
+    numeros = list(range(1, faixa+1))
+    pesos = [freq[n] + 1 for n in numeros]
+
+    jogo = []
+
+    # Escolhe primeiro número ponderado
+    primeiro = random.choices(numeros, weights=pesos, k=1)[0]
+    jogo.append(primeiro)
+
+    # Demais números usando correlação condicional
+    while len(jogo) < qtd:
+        candidatos = []
+
+        for n in numeros:
+            if n not in jogo:
+                score = sum(correlacao.get((x, n), 0) for x in jogo)
+                candidatos.append((n, score))
+
+        candidatos.sort(key=lambda x: x[1], reverse=True)
+
+        if candidatos and candidatos[0][1] > 0:
+            jogo.append(candidatos[0][0])
+        else:
+            n = random.choice([x for x in numeros if x not in jogo])
+            jogo.append(n)
+
+    jogo = sorted(jogo)
+
+    # Filtro anti sequência
+    if any(jogo[i] + 1 == jogo[i+1] for i in range(len(jogo)-1)):
+        return gerar_jogo_extremo(loteria, historico, correlacao)
+
+    return jogo
+
+# -----------------------------------
+# INTERFACE
+# -----------------------------------
 
 loteria = st.selectbox("Escolha a Loteria:", list(CONFIG.keys()))
-uploaded_file = st.file_uploader("Envie o arquivo CSV ou XLSX", type=["xlsx", "csv"])
 
-if uploaded_file:
-    st.success("Arquivo carregado com sucesso!")
+if st.button("ATIVAR EXTREMO MASTER + PADRÃO CONDICIONAL"):
 
-    frequencia = processar_arquivo(uploaded_file)
+    with st.spinner("Buscando histórico completo..."):
+        historico = buscar_historico(loteria)
 
-    if frequencia is not None:
-        st.subheader("Frequência dos números encontrados:")
-        st.dataframe(frequencia)
+    if not historico:
+        st.error("Erro ao carregar histórico.")
+    else:
+        st.success(f"{len(historico)} concursos carregados!")
 
-        if st.button("Gerar Jogo Inteligente"):
-            jogo = gerar_jogo(loteria)
-            st.success(f"Jogo gerado: {jogo}")
+        with st.spinner("Calculando correlação condicional..."):
+            correlacao = calcular_correlacao_condicional(historico)
+
+        st.subheader("🎯 3 Jogos SUPER OTIMIZADOS:")
+
+        jogos = []
+
+        for i in range(3):
+            jogo = gerar_jogo_extremo(loteria, historico, correlacao)
+            jogos.append(jogo)
+            st.success(f"Jogo {i+1}: {jogo}")
+
+        st.subheader("📊 Exemplo de Tabela Condicional (Top 10):")
+
+        top_condicional = sorted(correlacao.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        df_cond = pd.DataFrame(
+            [(x, y, round(p,4)) for ((x,y), p) in top_condicional],
+            columns=["Se sair X", "Tende sair Y", "Probabilidade"]
+        )
+
+        st.dataframe(df_cond)
