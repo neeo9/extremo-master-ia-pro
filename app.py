@@ -1,15 +1,15 @@
-# EXTREMO MASTER IA PRO - VERSÃO 6000 LEITURA DIRETA OPENPYXL
+# EXTREMO MASTER IA PRO - VERSÃO 7000 FINAL ESTÁVEL
 
 import streamlit as st
 import random
+import pandas as pd
 from openpyxl import load_workbook
 from io import BytesIO
-import pandas as pd
 
 st.set_page_config(page_title="EXTREMO MASTER IA PRO", layout="centered")
 
 st.title("🔥 EXTREMO MASTER IA PRO")
-st.markdown("### Versão 6000 - Leitura Direta e 100% Segura")
+st.markdown("### Versão 7000 - Compatível com CSV e XLSX")
 
 CONFIG = {
     "Mega-Sena": {"faixa": 60, "qtd": 6},
@@ -18,23 +18,23 @@ CONFIG = {
     "Lotomania": {"faixa": 100, "qtd": 20},
 }
 
-def extrair_numeros_seguro(valor):
+def extrair_numeros(valor):
     numeros = []
     numero_atual = ""
 
     texto = str(valor)
 
-    for caractere in texto:
-        if caractere.isdigit():
-            numero_atual += caractere
+    for c in texto:
+        if c.isdigit():
+            numero_atual += c
         else:
-            if numero_atual != "":
+            if numero_atual:
                 numero_int = int(numero_atual)
                 if 1 <= numero_int <= 100:
                     numeros.append(numero_int)
                 numero_atual = ""
 
-    if numero_atual != "":
+    if numero_atual:
         numero_int = int(numero_atual)
         if 1 <= numero_int <= 100:
             numeros.append(numero_int)
@@ -42,18 +42,38 @@ def extrair_numeros_seguro(valor):
     return numeros
 
 
+def processar_csv(uploaded_file):
+    df = pd.read_csv(uploaded_file, dtype=str, sep=None, engine="python")
+    return df
+
+
+def processar_xlsx(uploaded_file):
+    bytes_data = uploaded_file.read()
+    wb = load_workbook(filename=BytesIO(bytes_data), data_only=True)
+
+    dados = []
+
+    for sheet in wb.worksheets:
+        for row in sheet.iter_rows(values_only=True):
+            dados.append(row)
+
+    df = pd.DataFrame(dados)
+    return df
+
+
 def processar_arquivo(uploaded_file):
     try:
-        bytes_data = uploaded_file.read()
-        wb = load_workbook(filename=BytesIO(bytes_data), data_only=True)
+        if uploaded_file.name.endswith(".csv"):
+            df = processar_csv(uploaded_file)
+        else:
+            df = processar_xlsx(uploaded_file)
 
         todos_numeros = []
 
-        for sheet in wb.worksheets:
-            for row in sheet.iter_rows(values_only=True):
-                for cell in row:
-                    numeros = extrair_numeros_seguro(cell)
-                    todos_numeros.extend(numeros)
+        for coluna in df.columns:
+            for valor in df[coluna]:
+                numeros = extrair_numeros(valor)
+                todos_numeros.extend(numeros)
 
         if not todos_numeros:
             st.warning("Nenhum número válido encontrado.")
@@ -79,7 +99,7 @@ def gerar_jogo(loteria):
 
 
 loteria = st.selectbox("Escolha a Loteria:", list(CONFIG.keys()))
-uploaded_file = st.file_uploader("Envie o arquivo Excel com os resultados", type=["xlsx"])
+uploaded_file = st.file_uploader("Envie o arquivo CSV ou XLSX", type=["xlsx", "csv"])
 
 if uploaded_file:
     st.success("Arquivo carregado com sucesso!")
